@@ -770,16 +770,22 @@
             child (r/get-child renderer el idx)
             corresponding-old-vdom (nth old-children o-idx)]
         (r/insert-before renderer el child (r/get-child renderer el n))
-        (reconcile* impl el headers corresponding-old-vdom n)
-        (when (unchanged? headers corresponding-old-vdom)
-          ;; If it didn't change, reconcile* did not schedule a hook
-          ;; Because the node just moved we still need the hook
-          (register-hooks impl child headers corresponding-old-vdom move-node-details))
-        [(next new-children)
-         (concat (take o-idx old-children) (drop (unchecked-inc-int o-idx) old-children))
-         (unchecked-inc-int n)
-         (unchecked-inc-int (unchecked-add-int n o-idx))
-         corresponding-old-vdom]))))
+        ;; `reconcile*` answers the vdom it just rendered. Recording
+        ;; `corresponding-old-vdom` here instead leaves the vdom holding the
+        ;; child's OLD content while the DOM holds its new content, and the
+        ;; next render diffs against that stale tree. When the stale vdom
+        ;; lists a child the DOM no longer holds, `remove-child` reaches past
+        ;; the DOM's last child.
+        (let [new-vdom (reconcile* impl el headers corresponding-old-vdom n)]
+          (when (unchanged? headers corresponding-old-vdom)
+            ;; If it didn't change, reconcile* did not schedule a hook
+            ;; Because the node just moved we still need the hook
+            (register-hooks impl child headers corresponding-old-vdom move-node-details))
+          [(next new-children)
+           (concat (take o-idx old-children) (drop (unchecked-inc-int o-idx) old-children))
+           (unchecked-inc-int n)
+           (unchecked-inc-int (unchecked-add-int n o-idx))
+           new-vdom])))))
 
 (defn insert-node [r el child n n-children]
   (if (<= n-children n)

@@ -407,6 +407,25 @@
                h/summarize)
            [[:insert-before [:li "Item #3"] [:li "Item #1"] :in "ul"]])))
 
+  (testing "Updates vdom when moved keyed node has updated content"
+    (is (= (-> (h/render [:ul
+                          [:li {:replicant/key 1} "a"]
+                          [:li {:replicant/key 2} "b"]
+                          [:li {:replicant/key 3} "c" [:b "x"]]])
+               (h/render [:ul
+                          [:li {:replicant/key 3} "C2"]
+                          [:li {:replicant/key 1} "a"]
+                          [:li {:replicant/key 2} "b"]])
+               (h/render [:ul
+                          [:li {:replicant/key 3} "C3"]
+                          [:li {:replicant/key 1} "a"]
+                          [:li {:replicant/key 2} "b"]])
+               h/->dom)
+           [:ul
+            [:li "C3"]
+            [:li "a"]
+            [:li "b"]])))
+
   (testing "Only moves \"disorganized\" nodes in the middle"
     (is (= (-> (h/render [:ul
                           [:li {:replicant/key "0"} "Item #1"]
