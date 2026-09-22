@@ -222,14 +222,10 @@
                                                                         :aliases aliases
                                                                         :alias-data alias-data})
                                (catch :default e
-                                 (js/console.error (str "Caught exception during rendering. "
-                                                        (if aliases
-                                                          "You may have misbehaving aliases, or you have encountered a bug in Replicant."
-                                                          "This is likely a bug in Replicant."))
-                                                   e)
-                                 nil))]
-          (vswap! state update el merge (cond-> {:rendering? false}
-                                          vdom (assoc :current vdom)))
+                                 (vswap! state dissoc el)
+                                 (throw e)))]
+          (vswap! state update el merge {:current vdom
+                                         :rendering? false})
           (when-let [pending (:queued (get @state el))]
             (js/requestAnimationFrame #(render el pending))
             (vswap! state update el dissoc :queued))))))
